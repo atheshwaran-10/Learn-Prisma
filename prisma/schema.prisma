@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  //!         prisma model format
+  //!          name datatype modifiers(optional) arguments(optional)
+  //! example: name  String? @map("_id")
+  //!         here ? denotes that is optional
+  //!         attributes startswith "@"
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  age              Int
+  email            String           @unique
+  Role             Role            @default(BASIC)
+  writtenPosts     Post[]          @relation("written")
+  //!relation name can be assigned with @relation(relation_name)
+  favoritePosts    Post[]          @relation("favorite")
+  Userpreference   UserPreference? @relation(fields: [userPreferenceId], references: [id])
+  userPreferenceId String?         @unique @db.ObjectId
+
+  @@unique([age, name])
+}
+
+model UserPreference {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  emailUpdates Boolean
+  User         User?
+  //! here relation name is optional
+  //!@unique refers to no two preferences can have same userId
+
+  //! here the relation has 3 params (relation_name(optional),fields:[],references:[])
+  //!the fields and references make the relation between two tables or models
+}
+
+model Post {
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  rating         Float
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  author         User       @relation("written", fields: [authorId], references: [id])
+  authorId       String     @db.ObjectId
+  favouritedBy   User?      @relation("favorite", fields: [favouritedById], references: [id])
+  favouritedById String     @db.ObjectId
+  categories     Category[] @relation(fields: [categoriesId], references: [id])
+  categoriesId   String[]   @db.ObjectId
+
+  //!here two relation have same references so relation_name must be assigned so that they can be used by other model respectively
+}
+
+model Category {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  name    String   @unique
+  postIds String[] @db.ObjectId
+  posts   Post[]   @relation(fields: [postIds], references: [id])
+}
+
+enum Role {
+  BASIC
+  ADMIN
+}
